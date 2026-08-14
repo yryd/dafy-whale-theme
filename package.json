@@ -1,0 +1,38 @@
+{
+  "name": "dafy-whale-theme",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "index.mjs",
+  "description": "蓝色大肥鱼主题：海洋配色、鱼群、气泡与 DeepSeek 娘吉祥物（素材来自网络开源仓库）。",
+  "repository": "https://github.com/DViridescent/dafy-whale-theme",
+  "exports": {
+    ".": "./index.mjs",
+    "./client": "./client.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.mjs",
+    "client.js",
+    "install.mjs",
+    "assets",
+    "README.md",
+    "LICENSE",
+    "NOTICE"
+  ],
+  "dsh": {
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-theme"
+      ]
+    }
+  },
+  "keywords": [
+    "deepseek-harness",
+    "dsh",
+    "theme",
+    "web-plugin",
+    "blue-whale"
+  ],
+  "license": "MIT"
+}
