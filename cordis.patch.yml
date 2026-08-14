@@ -1,0 +1,11 @@
+# dafy-whale-theme 组合包层（bundle layer）。
+#
+# 本包在 package.json 中声明 dsh.bundle.patch 指向本文件：
+# `dsh plugin --profile <name> add dafy-whale-theme` 安装依赖后会自动把本包
+# 收进该 profile 的 dsh.profile.bundles 层列表，下一层用户 patch 仍可按 id 覆盖。
+#
+# 顶层是一个 YAML 数组：insert 把本包自身的行挂进组合树（宿主半部 index.mjs
+# 提供 /dafy-assets 路由，客户端半部 client.js 由 web 的模块名录扫描挂载）。
+- insert:
+    - id: dafy-whale-theme
+      name: dafy-whale-theme
