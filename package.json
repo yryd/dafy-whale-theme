@@ -1,6 +1,6 @@
 {
   "name": "dafy-whale-theme",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "type": "module",
   "main": "index.mjs",
   "description": "蓝色大肥鱼主题：海洋配色、鱼群、气泡与 DeepSeek 娘吉祥物（素材来自网络开源仓库）。",
