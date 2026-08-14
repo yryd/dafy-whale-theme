@@ -15,6 +15,7 @@
     "client.js",
     "install.mjs",
     "assets",
+    "preview.png",
     "README.md",
     "LICENSE",
     "NOTICE"

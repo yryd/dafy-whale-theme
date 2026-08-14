@@ -1,15 +1,15 @@
 # 素材来源与许可（NOTICE）
 
-本仓库代码采用 MIT 许可（见 LICENSE）。随仓库分发的图片素材来自以下社区仓库，各自保留原许可：
+本仓库代码采用 MIT 许可（见 LICENSE）。图片素材来自以下社区仓库，各自保留原许可：
 
-| 素材文件 | 来源仓库 | 许可 |
+| 素材文件 | 来源仓库 | 许可与分发方式 |
 | --- | --- | --- |
-| `assets/whale_front.png` `whale_side.png` `whale_icon.png` | [1190fasheqi/dafeiyu-pet](https://github.com/1190fasheqi/dafeiyu-pet) | MIT |
-| `assets/fish_idle.png` `fish_happy.png` | [YunYueSama/codex-deepseek-pet](https://github.com/YunYueSama/codex-deepseek-pet) | MIT |
-| `assets/meme_dafeiyu.png`（“你这吃白饭的蓝色大肥鱼”梗图） | [YunYueSama/codex-deepseek-pet](https://github.com/YunYueSama/codex-deepseek-pet) | MIT |
-| `assets/girl_idle.gif` `girl_waving.gif` `girl_running.gif`（DeepSeek 娘动图） | [xpy12367/codex-pet-DeepSeek-girl](https://github.com/xpy12367/codex-pet-DeepSeek-girl) | **无许可证声明，本仓库不分发**。用户可执行 `node install.mjs --fetch-extra` 从原仓库自行下载。 |
+| `assets/whale_front.png` `whale_side.png` `whale_icon.png` | [1190fasheqi/dafeiyu-pet](https://github.com/1190fasheqi/dafeiyu-pet) | MIT，随仓库分发 |
+| `assets/fish_idle.png` `fish_happy.png` | [YunYueSama/codex-deepseek-pet](https://github.com/YunYueSama/codex-deepseek-pet) | MIT，随仓库分发 |
+| `assets/meme_dafeiyu.png`（“你这吃白饭的蓝色大肥鱼”梗图） | [YunYueSama/codex-deepseek-pet](https://github.com/YunYueSama/codex-deepseek-pet) | MIT，随仓库分发 |
+| `assets/girl_idle.gif` `girl_waving.gif` `girl_running.gif`（DeepSeek 娘动图） | [xpy12367/codex-pet-DeepSeek-girl](https://github.com/xpy12367/codex-pet-DeepSeek-girl) | 源仓库无许可声明，**本仓库不分发**；`install.mjs` 在安装时自动从源仓库获取 |
 
 注意事项：
 
-- “DeepSeek 娘”属基于 DeepSeek 品牌角色的二创形象，涉及品牌/角色权利；如计划大规模公开分发，请自行评估商标与角色形象风险。
-- 引用来源是必要的致谢，但不能替代再分发许可；上表中无许可证素材不进入本仓库的发布产物。
+- 引用来源是必要的致谢，但不能替代再分发许可。
+- 「DeepSeek 娘」属基于 DeepSeek 品牌角色的二创形象，涉及品牌/角色权利；大规模公开或商业分发前请自行评估。

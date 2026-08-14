@@ -1,27 +1,23 @@
 #!/usr/bin/env node
 // dafy-whale-theme 一键安装脚本
 //
-// 用法（由 DSH agent 或用户直接执行）:
-//   node install.mjs                      # 装到 $DSH_HOME/profiles/web
-//   node install.mjs --profile web        # 同左，显式指定 profile
-//   node install.mjs --fetch-extra        # 额外从源仓库拉取 DeepSeek娘 GIF（无许可证素材，需自担）
-//   node install.mjs --home <dir>         # 覆盖 DSH_HOME（测试用）
+// 用法：
+//   node install.mjs                 # 装到 $DSH_HOME/profiles/web
+//   node install.mjs --profile web   # 指定 profile
+//   node install.mjs --home <dir>    # 覆盖 DSH_HOME（测试用）
 //
-// 幂等：重复执行不会重复写 patch 行。
+// 唯一默认通路，无任何可选项：复制插件 → 写挂载行 → 自动补齐全部素材 → 校验。
+// 幂等：重复执行不会重复写 patch、不会重复下载素材。
 
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs'
+import { existsSync, readFileSync, writeFileSync, mkdirSync, cpSync, statSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { cpSync } from 'node:fs'
 import os from 'node:os'
 
 const args = process.argv.slice(2)
 function opt(name, def) {
   const i = args.indexOf('--' + name)
   return i >= 0 && typeof args[i + 1] === 'string' ? args[i + 1] : def
-}
-function flag(name) {
-  return args.includes('--' + name)
 }
 
 const PKG_NAME = 'dafy-whale-theme'
@@ -43,7 +39,7 @@ if (!existsSync(join(profileDir, 'package.json'))) {
   process.exit(1)
 }
 
-// 2. 复制插件（跳过 .git / tarball；同路径则跳过）
+// 2. 复制插件（同路径则跳过）
 if (resolve(here) !== resolve(dest)) {
   cpSync(here, dest, {
     recursive: true,
@@ -62,7 +58,7 @@ if (new RegExp('\\b' + PKG_NAME + '\\b').test(yml)) {
 } else {
   const row = [
     '',
-    '# 蓝色大肥鱼主题（' + PKG_NAME + '）：宿主半部注册 /dafy-assets 素材路由。',
+    '# 蓝色大肥鱼主题（' + PKG_NAME + '）。',
     '- insert:',
     '    - id: ' + PKG_NAME,
     '      name: ' + PKG_NAME,
@@ -72,22 +68,29 @@ if (new RegExp('\\b' + PKG_NAME + '\\b').test(yml)) {
   log('已向', patchPath, '追加挂载行')
 }
 
-// 4. 可选：按需从源仓库拉取无许可证素材（DeepSeek娘 GIF）
-//    这些文件不随仓库分发；由用户/agent 显式执行本步时自行下载。
-if (flag('fetch-extra')) {
-  const base = 'https://raw.githubusercontent.com/xpy12367/codex-pet-DeepSeek-girl/main/previews/'
-  const extra = { 'girl_idle.gif': 'idle.gif', 'girl_waving.gif': 'waving.gif', 'girl_running.gif': 'running.gif' }
-  mkdirSync(join(dest, 'assets'), { recursive: true })
-  for (const [target, source] of Object.entries(extra)) {
-    try {
-      const res = await fetch(base + source)
-      if (!res.ok) throw new Error('HTTP ' + res.status)
-      const buf = Buffer.from(await res.arrayBuffer())
-      writeFileSync(join(dest, 'assets', target), buf)
-      log('已下载', target, buf.length, 'bytes')
-    } catch (err) {
-      log('下载失败', source, ':', err && err.message ? err.message : err)
-    }
+// 4. 自动补齐扩展素材
+//    这些文件因许可原因不随仓库分发（见 NOTICE），安装时统一从源仓库获取，
+//    用户无需做任何选择；获取失败时吉祥物会自动回退为 emoji，重跑本脚本即可重试。
+const EXTRA = {
+  'girl_idle.gif': 'https://raw.githubusercontent.com/xpy12367/codex-pet-DeepSeek-girl/main/previews/idle.gif',
+  'girl_waving.gif': 'https://raw.githubusercontent.com/xpy12367/codex-pet-DeepSeek-girl/main/previews/waving.gif',
+  'girl_running.gif': 'https://raw.githubusercontent.com/xpy12367/codex-pet-DeepSeek-girl/main/previews/running.gif',
+}
+mkdirSync(join(dest, 'assets'), { recursive: true })
+for (const [name, url] of Object.entries(EXTRA)) {
+  const target = join(dest, 'assets', name)
+  if (existsSync(target) && statSync(target).size > 0) {
+    log('素材已存在，跳过', name)
+    continue
+  }
+  try {
+    const res = await fetch(url)
+    if (!res.ok) throw new Error('HTTP ' + res.status)
+    const buf = Buffer.from(await res.arrayBuffer())
+    writeFileSync(target, buf)
+    log('已下载', name, buf.length, 'bytes')
+  } catch (err) {
+    log('下载失败', name, ':', err && err.message ? err.message : err, '（吉祥物将回退为 emoji，稍后重跑本脚本即可重试）')
   }
 }
 
