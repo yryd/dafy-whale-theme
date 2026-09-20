@@ -169,6 +169,24 @@ test('buildFish: 关闭大鲸鱼后不出现 big 条目', () => {
   assert.ok(fish.every((spec) => !spec.big))
 })
 
+test('buildFish: 透明度倍率生效且不超过 1', () => {
+  const dimmer = buildFish(normalizeConfig({ fishOpacityScale: 0.5 }))
+  assert.equal(dimmer[0].op, BASE_FISH[0].op * 0.5)
+  const saturated = buildFish(normalizeConfig({ fishOpacityScale: 2 }))
+  assert.ok(saturated.every((spec) => spec.op <= 1), '透明度不应超过 1')
+  const invisible = buildFish(normalizeConfig({ fishOpacityScale: 0 }))
+  assert.ok(invisible.every((spec) => spec.op === 0))
+})
+
+test('buildFish: 自定义小鱼素材被采用，大鲸鱼始终用 whale_front', () => {
+  const swapped = buildFish(
+    normalizeConfig({ fishIdleAsset: 'fish_happy.png', fishHappyAsset: 'fish_idle.png' }),
+  )
+  assert.equal(swapped[0].src, 'fish_happy.png', '下标 0 用 idle 槽位的素材')
+  assert.equal(swapped[1].src, 'fish_idle.png', '下标 1 用 happy 槽位的素材')
+  assert.equal(swapped[4].src, 'whale_front.png', '大鲸鱼不受小鱼素材影响')
+})
+
 test('bubbleSpecs: 默认 14 个且沿用改造前公式', () => {
   const bubbles = bubbleSpecs(DEFAULTS)
   assert.equal(bubbles.length, 14)

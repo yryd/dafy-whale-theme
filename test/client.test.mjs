@@ -193,6 +193,18 @@ test('设置面板注册到 settings.section 且有 id 与 label', async () => {
   assert.equal(typeof section.component, 'function')
 })
 
+test('插槽注册的 id / order 与改造前逐字段一致（改了会影响显示顺序）', async () => {
+  const { registrations } = await applyWithStubs()
+  const byName = Object.fromEntries(registrations.map((entry) => [entry.options.name, entry.options]))
+
+  assert.equal(byName['shell.overlay'].id, 'dafy-school')
+  assert.equal(byName['shell.overlay'].order, 10)
+  assert.equal(byName['conversation.input.dock'].id, 'dafy-dock')
+  assert.equal(byName['conversation.input.dock'].order, 5)
+  assert.equal(byName['sidebar.footer.action'].id, 'dafy-chip')
+  assert.equal(byName['sidebar.footer.action'].order, 5)
+})
+
 test('鱼群 chip 的 label 反映当前开关状态', async () => {
   const { registrations } = await applyWithStubs()
   const chip = registrations.find((entry) => entry.options.name === 'sidebar.footer.action')
