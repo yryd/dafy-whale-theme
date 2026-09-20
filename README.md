@@ -61,6 +61,35 @@ dsh plugin --profile web remove dafy-whale-theme   # 卸载
 
 配置保存在 DSH 用户设置文档的 `dafy-whale` 命名空间下，随 DSH 的设置一起管理。
 
+## 开发
+
+本包是 TypeScript 项目。`lib/` 是**构建产物**（不入库，发布时由 CI 构建）。
+
+```bash
+npm install --include=dev   # ⚠️ 见下方说明
+npm run build               # tsc 宿主 + tsc 客户端 + wrap → lib/
+npm run typecheck           # 仅类型检查
+npm run check               # DSH 插件契约校验 + schema 对齐校验
+npm test                    # 构建 + 全部测试
+```
+
+> ⚠️ **`NODE_ENV=production` 陷阱**：该环境变量存在时，`npm install` **默认不安装
+> devDependencies**，表现为只打印 `up to date, audited 1 package` 而什么都不装。
+> 请显式加 `--include=dev`（CI 里也已这么写）。
+
+| 路径 | 说明 |
+|---|---|
+| `src/config.ts` | 共享配置模型：`DEFAULTS` / `normalizeConfig` / `deriveTokens` / `buildFish` |
+| `src/index.ts` | 宿主半：注册 `dafy-whale` settings 命名空间 + `/dafy-assets` 素材路由 |
+| `src/client.tsx` | 客户端半：插槽组件 + 「设置 → 海洋主题」面板 |
+| `src/logo-path.ts` | 官方鲸鱼轮廓 path（从改造前代码提取，勿手改） |
+| `scripts/wrap-client.mjs` | 把 tsc 的 CJS 产物打包成 DSH 的 ModuleLoader 形态 |
+| `scripts/check-*.mjs` | 契约护栏（见 `npm run check`） |
+| `test/` | `node:test`，零测试框架依赖 |
+
+**改动后必须 `npm run build`**；装上插件后还须**重启 `dsh web`** 才能看到客户端改动
+（web 组合禁用 HMR，F5 无效）。
+
 ## 素材与许可
 
 代码采用 MIT 许可（见 [LICENSE](LICENSE)）。图片素材来自社区仓库，均为 MIT 许可、随包分发，逐文件来源见 [NOTICE](NOTICE)。
