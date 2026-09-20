@@ -1,0 +1,83 @@
+name: CI
+
+# 每次 push / PR 都验证构建与护栏。
+#
+# 为什么必须有这个：publish.yml 只在推 tag 时运行，于是「护栏只在发版那天跑一次」——
+# 一个破坏构建的 commit 可以静默地待在 main 上，直到你要发版时才发现。
+# 本 workflow 只做验证，**不发布**（发布仍由 publish.yml 的 tag 触发）。
+on:
+  push:
+    branches:
+      - '**'
+    tags-ignore:
+      - '**'          # tag 走 publish.yml，避免重复跑
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: 'npm'          # package-lock.json 已在版本控制中
+
+      # NODE_ENV=production 下 npm 会跳过 devDependencies，必须显式声明
+      - name: 安装依赖
+        run: npm ci --include=dev
+
+      - name: 构建（TS → lib/）
+        run: npm run build
+
+      - name: 类型检查
+        run: npm run typecheck
+
+      - name: 契约护栏（DSH 契约 + schema 对齐）
+        run: npm run check
+
+      - name: 测试
+        run: node --test test/*.test.mjs
+
+      # 打包内容是最容易静默出错的一环：files 白名单漏一项，
+      # 发出去的包就少文件，而本地一切正常。
+      - name: 校验 tarball 内容
+        run: |
+          npm pack --dry-run --json > /tmp/pack.json
+          node -e '
+            const fs = require("node:fs");
+            const info = JSON.parse(fs.readFileSync("/tmp/pack.json", "utf8"))[0];
+            const files = info.files.map((f) => f.path);
+            const required = [
+              "package.json",
+              "lib/index.js",
+              "lib/client.cjs",
+              "lib/config.js",
+              "cordis.patch.yml",
+              "README.md",
+              "CHANGELOG.md",
+              "LICENSE",
+              "NOTICE",
+            ];
+            const missing = required.filter((f) => !files.includes(f));
+            if (missing.length > 0) {
+              console.error("tarball 缺少必需文件:", missing.join(", "));
+              process.exit(1);
+            }
+            const assets = files.filter((f) => f.startsWith("assets/"));
+            if (assets.length !== 5) {
+              console.error(`assets/ 应为 5 个文件，实际 ${assets.length}`);
+              process.exit(1);
+            }
+            // 构建产物必须来自 lib/，源码不应被打包
+            const leaked = files.filter((f) => f.startsWith("src/") || f.startsWith(".build/"));
+            if (leaked.length > 0) {
+              console.error("源码不应进入 tarball:", leaked.join(", "));
+              process.exit(1);
+            }
+            console.log(`tarball OK：${files.length} 个文件，${(info.size / 1024).toFixed(0)} KB`);
+          '
