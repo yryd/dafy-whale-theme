@@ -149,8 +149,7 @@ export const ConfigSchema = z.object({
 })
 
 /** 宿主侧用到的最小上下文面（只声明实际用到的成员）。 */
-interface AssetRoute {
-  kind: 'prefix'
+interface AssetRoute {  kind: 'prefix'
   path: string
   handler(req: { method?: string; url?: string }, res: RouteResponse): Promise<void> | void
 }
