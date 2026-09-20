@@ -19,6 +19,7 @@ import {
   bubbleSpecs,
   buildFish,
   deriveTokens,
+  isHexColor,
   normalizeConfig,
   toCssVars,
   type FishAsset,
@@ -459,6 +460,13 @@ function TextInput({
   )
 }
 
+/**
+ * 颜色输入：取色器 + hex 文本框。
+ *
+ * hex 文本框必须保留**本地草稿态**：若直接把校验后的值灌回输入框，
+ * 用户敲下第一个字符 `#` 时就会被判定非法并回落到默认色，导致**根本无法输入**。
+ * 因此草稿照单全收，只有合法 hex 才提交，失焦时再与真实值对齐。
+ */
 function ColorInput({
   value,
   onChange,
@@ -466,6 +474,11 @@ function ColorInput({
   value: string
   onChange: (next: string) => void
 }): React.ReactElement {
+  const [draft, setDraft] = React.useState(value)
+  React.useEffect(() => {
+    setDraft(value)
+  }, [value])
+
   return (
     <>
       <input
@@ -477,9 +490,14 @@ function ColorInput({
       <input
         className="dafy-input dafy-hex"
         type="text"
-        value={value}
+        value={draft}
         spellCheck={false}
-        onChange={(event) => onChange(event.target.value)}
+        onChange={(event) => {
+          const next = event.target.value
+          setDraft(next)
+          if (isHexColor(next)) onChange(next.toUpperCase())
+        }}
+        onBlur={() => setDraft(value)}
       />
     </>
   )

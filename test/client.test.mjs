@@ -298,17 +298,33 @@ function findInteractive(node) {
   return null
 }
 
-/** 按行标签取该行的控件元素（穿透 Slider / ColorInput 等包装组件）。 */
-function controlFor(tree, labelText) {
-  const rows = findByClass(tree, 'dafy-row')
-  for (const row of rows) {
+/** 收集子树里全部可交互控件。 */
+function findAllInteractive(node, out = []) {
+  const element = expand(node)
+  if (element === null || typeof element !== 'object') return out
+  if (element.type === 'input' || element.type === 'select' || element.type === 'textarea') {
+    out.push(element)
+  }
+  for (const child of childrenOf(element)) findAllInteractive(child, out)
+  return out
+}
+
+/** 按行标签取该行的全部控件。 */
+function controlsFor(tree, labelText) {
+  for (const row of findByClass(tree, 'dafy-row')) {
     const [label, body] = childrenOf(row)
     if (expand(label)?.props?.children === labelText) {
-      const control = findInteractive(body)
-      if (control !== null) return control
+      return findAllInteractive(body)
     }
   }
   throw new Error(`未找到标签为「${labelText}」的设置行`)
+}
+
+/** 按行标签取该行的控件元素（穿透 Slider / ColorInput 等包装组件）。 */
+function controlFor(tree, labelText) {
+  const controls = controlsFor(tree, labelText)
+  if (controls.length === 0) throw new Error(`标签「${labelText}」的行没有控件`)
+  return controls[0]
 }
 
 /** 渲染面板并返回 { tree, writes }。 */
@@ -357,6 +373,33 @@ test('面板：改主色会写入 primaryLight', async () => {
   const write = writes.find((entry) => entry.field === 'primaryLight')
   assert.ok(write, '应写入 primaryLight')
   assert.equal(write.value, '#FF0000', '颜色应归一化为大写')
+})
+
+test('面板：hex 输入框允许中间态，非法值不提交（否则根本打不出颜色）', async () => {
+  const { tree, writes } = await renderPanel()
+  const [colorInput, hexInput] = controlsFor(tree, '亮色主色')
+  assert.equal(colorInput.props.type, 'color')
+  assert.equal(hexInput.props.type, 'text')
+
+  // 逐字符输入的中间态：都不合法，都不应提交
+  for (const partial of ['#', '#F', '#FF', '#FF00', 'zzz']) {
+    hexInput.props.onChange({ target: { value: partial } })
+  }
+  assert.equal(
+    writes.filter((entry) => entry.field === 'primaryLight').length,
+    0,
+    '中间态不应触发写入',
+  )
+
+  // 凑成合法 hex 才提交
+  hexInput.props.onChange({ target: { value: '#00ff00' } })
+  const write = writes.find((entry) => entry.field === 'primaryLight')
+  assert.ok(write, '合法 hex 应写入')
+  assert.equal(write.value, '#00FF00')
+
+  // 失焦时与真实值对齐（草稿被丢弃）
+  assert.equal(typeof hexInput.props.onBlur, 'function')
+  hexInput.props.onBlur()
 })
 
 test('面板：编辑语录列表会按行拆分并过滤空行', async () => {
