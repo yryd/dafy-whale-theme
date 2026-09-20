@@ -27,6 +27,14 @@ dsh plugin --profile web remove dafy-whale-theme   # 卸载
 
 > patch 层只在**下次启动**时生效：重启 `dsh web` 后刷新页面（web 组合禁用了 HMR，不会热加载）。
 
+## 兼容性
+
+| DSH 版本 | 状态 |
+|---|---|
+| `0.1.6-alpha.1` | ✅ 当前版本，已实测 |
+
+仅支持 **web** 端（`dsh.client.platform: "web"`）。DSH 处于 alpha 阶段，破坏性变更可能使主题静默失效；升级 DSH 后若品牌区或配色异常，请提 issue。
+
 ## 特性
 
 - 海洋蓝亮/暗双主题配色，DeepSeek 蓝品牌色
