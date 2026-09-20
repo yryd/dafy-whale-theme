@@ -1,0 +1,40 @@
+name: Publish Package
+
+# 仅由 tag 触发（打 v* 标签 = 发版）。
+# 刻意不加 workflow_dispatch：npm 文档指出 workflow_dispatch / workflow_call 场景下
+# trusted publisher 的校验会比对「调用方 workflow 名」，容易造成配置不匹配而 ENEEDAUTH。
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  id-token: write   # OIDC 必需；缺失会导致 ENEEDAUTH
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+          package-manager-cache: false   # 发布构建禁用缓存（npm 官方建议）
+
+      # 防止 tag 与 package.json 版本不一致导致发错版本
+      - name: 校验 tag 与 package.json 版本一致
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          PKG="$(node -p "require('./package.json').version")"
+          echo "tag=v$TAG  package.json=$PKG"
+          if [ "$TAG" != "$PKG" ]; then
+            echo "::error::tag v$TAG 与 package.json 的 $PKG 不一致，已中止发布"
+            exit 1
+          fi
+
+      # 本包零依赖、无构建步骤，因此不需要 npm ci / npm run build。
+      # 认证走 OIDC trusted publishing，无需 NPM_TOKEN。
+      - run: npm publish
