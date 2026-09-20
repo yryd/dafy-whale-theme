@@ -4,7 +4,10 @@
   "type": "module",
   "main": "index.mjs",
   "description": "蓝色大肥鱼主题：DeepSeek Harness web 前端的海洋配色、游动鱼群与上升气泡。",
-  "repository": "https://github.com/yryd/dafy-whale-theme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yryd/dafy-whale-theme.git"
+  },
   "exports": {
     ".": "./index.mjs",
     "./client": "./client.js",
