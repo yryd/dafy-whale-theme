@@ -43,7 +43,23 @@ jobs:
           echo "dist-tag=$DIST_TAG"
           echo "dist_tag=$DIST_TAG" >> "$GITHUB_OUTPUT"
 
+      # 幂等守卫：该版本已存在于 registry 时跳过发布。
+      # 于是重推同一个 tag（例如重写历史后）不再产生无谓的红色失败——
+      # npm 本身也会以 E403 "cannot publish over the previously published versions" 拒绝覆盖。
+      - name: 已发布则跳过
+        id: guard
+        run: |
+          NAME="$(node -p "require('./package.json').name")"
+          PKG="$(node -p "require('./package.json').version")"
+          if npm view "$NAME@$PKG" version >/dev/null 2>&1; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::$NAME@$PKG 已存在，跳过发布"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
       # 本包零依赖、无构建步骤，因此不需要 npm ci / npm run build。
       # 认证走 OIDC trusted publishing，无需 NPM_TOKEN。
       # 注意：将来引入 TS/构建后，这里必须在 publish 之前插入构建步骤。
-      - run: npm publish --tag ${{ steps.release.outputs.dist_tag }}
+      - if: steps.guard.outputs.skip == 'false'
+        run: npm publish --tag ${{ steps.release.outputs.dist_tag }}
