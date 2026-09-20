@@ -1,6 +1,6 @@
 {
   "name": "dafy-whale-theme",
-  "version": "1.2.1-rc.0",
+  "version": "1.2.1",
   "type": "module",
   "main": "index.mjs",
   "description": "蓝色大肥鱼主题：DeepSeek Harness web 前端的海洋配色、游动鱼群与上升气泡。",
