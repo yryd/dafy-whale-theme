@@ -402,14 +402,28 @@ test('面板：hex 输入框允许中间态，非法值不提交（否则根本�
   hexInput.props.onBlur()
 })
 
-test('面板：编辑语录列表会按行拆分并过滤空行', async () => {
+test('面板：语录列表不吞换行（否则永远无法新增一条语录）', async () => {
   const { tree, writes } = await renderPanel()
   const textarea = controlFor(tree, '语录列表')
   assert.equal(textarea.type, 'textarea')
-  textarea.props.onChange({ target: { value: '甲\n\n乙\n' } })
+  const before = textarea.props.value
+  const beforeCount = before.split('\n').length
+
+  // 用户在末尾按 Enter，准备输入新语录
+  textarea.props.onChange({ target: { value: `${before}\n` } })
+
   const write = writes.find((entry) => entry.field === 'dockLines')
   assert.ok(write, '应写入 dockLines')
-  assert.deepEqual([...write.value], ['甲', '乙'], '空行应被过滤')
+  assert.equal(write.value.length, beforeCount + 1, '应保留这一行（空行）')
+  assert.equal(write.value[write.value.length - 1], '', '末尾应是空行，供用户继续输入')
+})
+
+test('面板：语录列表按行拆分，空行原样保留', async () => {
+  const { tree, writes } = await renderPanel()
+  const textarea = controlFor(tree, '语录列表')
+  textarea.props.onChange({ target: { value: '甲\n\n乙\n' } })
+  const write = writes.find((entry) => entry.field === 'dockLines')
+  assert.deepEqual([...write.value], ['甲', '', '乙', ''], '不丢空行')
 })
 
 test('面板：改品牌文字会写入 brandText', async () => {
@@ -457,4 +471,44 @@ test('面板：「恢复全部默认」把全部字段写回默认值', async ()
   // 写回的应是默认值本身
   const write = writes.find((entry) => entry.field === 'fishCount')
   assert.equal(write.value, DEFAULTS.fishCount)
+})
+
+test('面板覆盖全部配置字段：逐个触发控件后，写入的字段集合应等于 DEFAULTS', async () => {
+  const { DEFAULTS } = await import(join(root, 'lib', 'config.js'))
+  const { tree, writes } = await renderPanel()
+
+  const controls = []
+  const collect = (node) => {
+    const element = expand(node)
+    if (element === null || typeof element !== 'object') return
+    if (
+      (element.type === 'input' || element.type === 'select' || element.type === 'textarea') &&
+      typeof element.props?.onChange === 'function'
+    ) {
+      controls.push(element)
+    }
+    for (const child of childrenOf(element)) collect(child)
+  }
+  collect(tree)
+
+  // 逐个触发：值只要「形状对」即可，字段名由控件闭包决定
+  for (const control of controls) {
+    const type = control.props.type
+    if (control.type === 'input' && type === 'checkbox') {
+      control.props.onChange({ target: { checked: false } })
+    } else if (control.type === 'input' && type === 'range') {
+      control.props.onChange({ target: { value: String(control.props.min ?? 1) } })
+    } else if (control.type === 'input' && type === 'color') {
+      control.props.onChange({ target: { value: '#123456' } })
+    } else if (control.type === 'select') {
+      const first = childrenOf(control)[0]
+      control.props.onChange({ target: { value: String(first?.props?.value ?? '') } })
+    } else {
+      control.props.onChange({ target: { value: '测试' } })
+    }
+  }
+
+  const written = new Set(writes.map((entry) => entry.field))
+  const missing = Object.keys(DEFAULTS).filter((field) => !written.has(field))
+  assert.deepEqual(missing, [], `以下字段在面板里没有可写入口：${missing.join(', ')}`)
 })

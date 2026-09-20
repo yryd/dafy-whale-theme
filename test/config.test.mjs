@@ -80,11 +80,12 @@ test('normalizeConfig: 非法类型与非法颜色回落默认', () => {
   assert.equal(cfg.fishIdleAsset, DEFAULTS.fishIdleAsset)
 })
 
-test('normalizeConfig: 语录列表过滤空行，全空则回落默认', () => {
-  const cfg = normalizeConfig({ dockLines: ['a', '', '  ', 'b'] })
-  assert.deepEqual(cfg.dockLines, ['a', 'b'])
-  const empty = normalizeConfig({ dockLines: ['', '   '] })
-  assert.deepEqual(empty.dockLines, [...DEFAULT_DOCK_LINES])
+test('normalizeConfig: 语录列表保留空行，非数组才回落默认', () => {
+  // 保留空行是刻意的：过滤放到渲染时做，否则面板 textarea 会吞掉用户按下的回车
+  assert.deepEqual(normalizeConfig({ dockLines: ['a', '', '  ', 'b'] }).dockLines, ['a', '', '  ', 'b'])
+  assert.deepEqual(normalizeConfig({ dockLines: [] }).dockLines, [], '空数组 = 用户主动清空')
+  assert.deepEqual(normalizeConfig({ dockLines: 'nope' }).dockLines, [...DEFAULT_DOCK_LINES])
+  assert.deepEqual(normalizeConfig({ dockLines: ['a', 42, null] }).dockLines, ['a'], '只保留字符串项')
 })
 
 test('normalizeConfig 是幂等的', () => {

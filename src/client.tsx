@@ -341,10 +341,10 @@ function FishSchool(): React.ReactElement | null {
   )
 }
 
-/** 每日鱼语轮播。 */
+/** 每日鱼语轮播。空行在**渲染时**过滤，这样面板的 textarea 可以完全受控而不吞输入。 */
 function FishDock(): React.ReactElement | null {
   const cfg = useConfig()
-  const lines = cfg.dockLines
+  const lines = cfg.dockLines.filter((line) => line.trim().length > 0)
   const [line, setLine] = React.useState(0)
 
   React.useEffect(() => {
@@ -702,15 +702,10 @@ function MarineSettingsSection(): React.ReactElement {
             className="dafy-textarea"
             value={cfg.dockLines.join('\n')}
             spellCheck={false}
-            onChange={(event) =>
-              set(
-                'dockLines',
-                event.target.value.split('\n').filter((line) => line.trim().length > 0),
-              )
-            }
+            onChange={(event) => set('dockLines', event.target.value.split('\n'))}
           />
         </Row>
-        <p className="dafy-hint">每行一条语录，空行会被忽略。</p>
+        <p className="dafy-hint">每行一条语录；空行会被忽略（不显示），可留空行继续编辑。</p>
       </Group>
 
       <Group title="界面">

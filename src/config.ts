@@ -235,8 +235,15 @@ export function normalizeConfig(raw: unknown): WhaleConfig {
     return clamp(typeof value === 'number' ? value : fallback, range.min, range.max)
   }
 
+  /**
+   * 语录列表**保留原样**（含空行）——过滤放到渲染《每日鱼语》时做。
+   *
+   * 若在这里去掉空行，面板的 textarea 就会「吞输入」：用户按 Enter 产生的
+   * 空行立刻被抹掉，于是**永远无法新增一条语录**（与 hex 输入框同一类缺陷）。
+   * 数组为空表示用户主动清空，此时不显示鱼语。
+   */
   const lines = Array.isArray(input.dockLines)
-    ? input.dockLines.filter((line): line is string => typeof line === 'string' && line.trim().length > 0)
+    ? input.dockLines.filter((line): line is string => typeof line === 'string')
     : [...DEFAULTS.dockLines]
 
   return {
@@ -271,7 +278,7 @@ export function normalizeConfig(raw: unknown): WhaleConfig {
 
     dockEnabled: asBool(input.dockEnabled, DEFAULTS.dockEnabled),
     dockIntervalMs: numeric('dockIntervalMs'),
-    dockLines: lines.length > 0 ? lines : [...DEFAULTS.dockLines],
+    dockLines: lines,
     dockEmoji: asBool(input.dockEmoji, DEFAULTS.dockEmoji),
 
     chipTextOn: asString(input.chipTextOn, DEFAULTS.chipTextOn),
