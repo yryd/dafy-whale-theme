@@ -199,3 +199,42 @@ test('toCssVars 输出全部预期变量', () => {
   assert.equal(vars['--dafy-watermark-opacity'], '0.1')
   assert.equal(vars['--dafy-wash-strength'], '1')
 })
+
+test('globalScale 是「整体缩放」：logo / 文字 / 鱼 / 气泡 / 水印全都跟随', () => {
+  const base = normalizeConfig({})
+  const big = normalizeConfig({ globalScale: 1.5 })
+
+  const baseVars = toCssVars(base)
+  const bigVars = toCssVars(big)
+
+  // 水印：由 --dafy-scale 驱动
+  assert.notEqual(baseVars['--dafy-scale'], bigVars['--dafy-scale'])
+  // 品牌标记与文字：必须直接被缩放（曾经漏掉，只影响水印）
+  assert.equal(baseVars['--dafy-logo-size'], '23px')
+  assert.equal(bigVars['--dafy-logo-size'], '34.5px')
+  assert.equal(baseVars['--dafy-logo-text-size'], '16px')
+  assert.equal(bigVars['--dafy-logo-text-size'], '24px')
+  // 鱼与气泡
+  assert.equal(buildFish(base)[0].size, 56)
+  assert.equal(buildFish(big)[0].size, 84)
+  assert.equal(bubbleSpecs(base)[0].size, 5)
+  assert.equal(bubbleSpecs(big)[0].size, 7.5)
+})
+
+test('globalScale = 1 时尺寸精确等于改造前（不引入浮点毛刺）', () => {
+  const cfg = normalizeConfig({})
+  assert.equal(toCssVars(cfg)['--dafy-logo-size'], '23px')
+  assert.equal(toCssVars(cfg)['--dafy-logo-text-size'], '16px')
+  // 56 而不是 56.00000000000001
+  assert.equal(buildFish(cfg)[0].size, 56)
+  assert.equal(buildFish(cfg)[4].size, 170)
+  assert.equal(bubbleSpecs(cfg)[0].size, 5)
+})
+
+test('globalScale 与单鱼倍率叠加而非互相覆盖', () => {
+  const cfg = normalizeConfig({ globalScale: 1.5, fishSizeScale: 0.5 })
+  // 56 * 0.5 * 1.5 = 42（两个倍率相乘）
+  assert.equal(buildFish(cfg)[0].size, 42)
+  // 越界的 globalScale 先被 clamp 到上限 1.5
+  assert.equal(normalizeConfig({ globalScale: 9 }).globalScale, RANGES.globalScale.max)
+})

@@ -113,13 +113,15 @@ function resetAll(): void {
 // ---------------------------------------------------------------------------
 
 let themeTimer: ReturnType<typeof setTimeout> | undefined
+let themeAppliedOnce = false
 
 /**
  * 把配置应用到界面。
  *
- * CSS 变量立即写（滑杆拖动时逐帧跟手）；token 覆盖做 200ms 防抖——
- * 因为 DSH 每次 `overrideTokens` 调用都会在 fiber 上登记一个 effect，
- * 逐帧调用会累积大量无效 effect。
+ * CSS 变量立即写（滑杆拖动时逐帧跟手）；token 覆盖分两种情况：
+ *   - **首次**立即生效——否则页面加载时先用默认配色闪一下再变蓝；
+ *   - 之后 200ms 防抖——DSH 每次 `overrideTokens` 调用都会在 fiber 上登记一个
+ *     effect，逐帧调用会累积大量无效 effect。
  */
 function applyTheme(cfg: WhaleConfig): void {
   if (typeof document === 'undefined') return
@@ -127,11 +129,19 @@ function applyTheme(cfg: WhaleConfig): void {
   for (const [name, value] of Object.entries(toCssVars(cfg))) {
     root.style.setProperty(name, value)
   }
-  if (themeTimer !== undefined) clearTimeout(themeTimer)
-  themeTimer = setTimeout(() => {
+
+  const pushTokens = (): void => {
     if (clientCtx === undefined) return
     clientCtx.theme.overrideTokens('dafy', deriveTokens(cfg.primaryLight, cfg.primaryDark))
-  }, 200)
+  }
+
+  if (!themeAppliedOnce) {
+    themeAppliedOnce = true
+    pushTokens()
+    return
+  }
+  if (themeTimer !== undefined) clearTimeout(themeTimer)
+  themeTimer = setTimeout(pushTokens, 200)
 }
 
 // ---------------------------------------------------------------------------
@@ -209,11 +219,12 @@ const CSS = `
 }
 .dafy-brand-badge {
   display: inline-flex; align-items: center; flex: none;
-  height: 10px; padding: 0 3px; border-radius: 2px;
+  height: calc(10px * var(--dafy-scale, 1)); padding: 0 3px; border-radius: 2px;
   background: var(--dsw-alias-label-primary);
   color: var(--dsw-alias-label-primary-inverted);
   font-family: var(--ds-font-family-code, ui-monospace, monospace);
-  font-size: 6px; font-weight: 500; line-height: 10px; white-space: nowrap;
+  font-size: calc(6px * var(--dafy-scale, 1)); font-weight: 500;
+  line-height: calc(10px * var(--dafy-scale, 1)); white-space: nowrap;
 }
 
 /* ---- 设置面板 ---- */

@@ -467,7 +467,8 @@ export function buildFish(cfg: WhaleConfig): FishSpec[] {
       // 不能用 cycle —— 否则第二、四条会错误地也用 idle。
       src: isBig ? 'whale_front.png' : i % 2 === 0 ? cfg.fishIdleAsset : cfg.fishHappyAsset,
       top: source.top,
-      size: source.size * cfg.fishSizeScale,
+      // 单鱼倍率 × 整体缩放
+      size: round2(source.size * cfg.fishSizeScale * cfg.globalScale),
       // 倍率越大越快 → 时长取倒数
       dur: source.dur / cfg.fishSpeedScale,
       // 循环生成的条目错开延迟，避免重叠
@@ -480,12 +481,12 @@ export function buildFish(cfg: WhaleConfig): FishSpec[] {
   return specs
 }
 
-/** 气泡数量为 0 时返回空数组；否则沿用改造前的取模公式。 */
+/** 气泡数量为 0 时返回空数组；否则沿用改造前的取模公式（尺寸再乘整体缩放）。 */
 export function bubbleSpecs(cfg: WhaleConfig): { left: string; size: number; dur: number; delay: number }[] {
   const out: { left: string; size: number; dur: number; delay: number }[] = []
   if (!cfg.bubbleEnabled) return out
   for (let i = 0; i < cfg.bubbleCount; i++) {
-    const size = 5 + ((i * 13) % 13)
+    const size = round2((5 + ((i * 13) % 13)) * cfg.globalScale)
     out.push({
       left: `${(i * 7.31) % 100}%`,
       size,
@@ -496,12 +497,22 @@ export function bubbleSpecs(cfg: WhaleConfig): { left: string; size: number; dur
   return out
 }
 
-/** 生成要写到 `<html>` 上的 CSS 变量（客户端与 boot 脚本共用）。 */
+/** 保留两位小数的取整，避免 23 * 1.5 这类乘法产生 34.499999999999996。 */
+function round2(value: number): number {
+  return Math.round(value * 100) / 100
+}
+
+/**
+ * 生成要写到 `<html>` 上的 CSS 变量（客户端与 boot 脚本共用）。
+ *
+ * ⚠️ `globalScale` 必须同时作用于品牌标记与品牌文字：
+ * 它是「整体缩放」总控，只改 `--dafy-scale`（仅水印在用）会让另外三项纹丝不动。
+ */
 export function toCssVars(cfg: WhaleConfig): Record<string, string> {
   return {
     '--dafy-scale': String(cfg.globalScale),
-    '--dafy-logo-size': `${cfg.brandIconSize}px`,
-    '--dafy-logo-text-size': `${cfg.brandTextSize}px`,
+    '--dafy-logo-size': `${round2(cfg.brandIconSize * cfg.globalScale)}px`,
+    '--dafy-logo-text-size': `${round2(cfg.brandTextSize * cfg.globalScale)}px`,
     '--dafy-watermark-opacity': String(cfg.watermarkOpacity),
     '--dafy-wash-strength': String(cfg.washStrength / 100),
   }
