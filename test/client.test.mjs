@@ -236,8 +236,8 @@ test('设置面板组件可以渲染成树', async () => {
   assert.ok(tree, '面板应可渲染')
   assert.equal(tree.type, 'div')
   assert.equal(tree.props.className, 'dafy-panel')
-  // 6 个分组：品牌区 / 配色 / 背景与氛围 / 鱼群 / 每日鱼语 / 界面
-  assert.equal(tree.props.children.length, 6)
+  // 7 个分组：品牌区 / 配色 / 背景与氛围 / 鱼群 / 每日鱼语 / 界面 / 重置
+  assert.equal(tree.props.children.length, 7)
 })
 
 test('外部 require 未知模块会抛出（保证没有偷偷引入依赖）', async () => {
@@ -339,11 +339,12 @@ function controlFor(tree, labelText) {
   return controls[0]
 }
 
-/** 渲染面板并返回 { tree, writes }。 */
+/** 渲染面板并返回 { tree, writes, rerender }（rerender 复用同一 bundle 实例）。 */
 async function renderPanel() {
   const { registrations, writes } = await applyWithStubs()
   const section = registrations.find((entry) => entry.options.name === 'settings.section')
-  return { tree: expand(section.component({})), writes }
+  const rerender = () => expand(section.component({}))
+  return { tree: rerender(), writes, rerender }
 }
 
 test('面板：切换「显示鱼群」会写入 schoolEnabled', async () => {
@@ -456,23 +457,41 @@ test('面板：每个设置行都能找到一个控件（无空行）', async ()
   }
 })
 
-test('面板：「恢复全部默认」把全部字段写回默认值', async () => {
-  const { DEFAULTS } = await import(join(root, 'lib', 'config.js'))
-  const { tree, writes } = await renderPanel()
-
+/** 在面板树里找「恢复默认」按钮。 */
+function findResetButton(tree) {
   const buttons = []
-  const collectButtons = (node) => {
+  const collect = (node) => {
     const element = expand(node)
     if (element === null || typeof element !== 'object') return
     if (element.type === 'button') buttons.push(element)
-    for (const child of childrenOf(element)) collectButtons(child)
+    for (const child of childrenOf(element)) collect(child)
   }
-  collectButtons(tree)
+  collect(tree)
+  return buttons.find((button) => String(childrenOf(button)[0] ?? '').includes('恢复'))
+}
 
-  const reset = buttons.find((button) => childrenOf(button).includes('恢复全部默认'))
-  assert.ok(reset, '应存在「恢复全部默认」按钮')
-  assert.equal(typeof reset.props.onClick, 'function')
-  reset.props.onClick()
+test('面板：恢复默认需二次确认——第一次点击不写入任何字段', async () => {
+  const { rerender, writes } = await renderPanel()
+  const button = findResetButton(rerender())
+  assert.ok(button, '应存在恢复默认按钮')
+  assert.equal(String(childrenOf(button)[0]), '恢复全部默认')
+
+  button.props.onClick()
+  assert.equal(writes.length, 0, '第一次点击只进入待确认态，不应写入')
+})
+
+test('面板：二次确认后确实写回全部默认值', async () => {
+  const { DEFAULTS } = await import(join(root, 'lib', 'config.js'))
+  const { rerender, writes } = await renderPanel()
+
+  findResetButton(rerender()).props.onClick()
+
+  // 重新渲染后按钮文案应变为确认提示，并带危险色类名
+  const armed = findResetButton(rerender())
+  assert.match(String(childrenOf(armed)[0]), /再点一次，确认恢复全部 \d+ 项/)
+  assert.match(armed.props.className, /dafy-btn-danger/)
+
+  armed.props.onClick()
 
   const fields = new Set(writes.map((entry) => entry.field))
   const expected = Object.keys(DEFAULTS)

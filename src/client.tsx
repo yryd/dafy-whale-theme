@@ -276,6 +276,12 @@ const CSS = `
   background: var(--dsw-alias-bg-layer-2); color: var(--dsw-alias-label-primary);
 }
 .dafy-btn:hover { border-color: var(--dsw-alias-brand-primary); }
+/* 危险操作（全局重置的待确认态）：用状态色，与主题色独立 */
+.dafy-btn-danger {
+  border-color: var(--dsw-alias-state-error-primary);
+  color: var(--dsw-alias-state-error-primary);
+}
+.dafy-btn-danger:hover { border-color: var(--dsw-alias-state-error-primary); }
 .dafy-hint { color: var(--dsw-alias-label-caption); font-size: 12px; margin: 0; }
 `
 
@@ -551,6 +557,54 @@ function Group({
   )
 }
 
+/**
+ * 全局重置按钮。
+ *
+ * 它会一次改掉全部 32 项（品牌文字、语录列表、配色…），误点代价大，
+ * 因此做成**二次确认**：第一次点击只进入待确认态（按钮转危险色、文案改为确认提示），
+ * 4 秒无操作自动取消，第二次点击才真正执行。
+ *
+ * 「待确认」用模块级变量而不是 useState：状态在重渲染之间稳定，
+ * 且测试可以直接观察「第一次点击不写入、第二次才写入」这一行为。
+ */
+let resetArmedUntil = 0
+
+function ResetRow(): React.ReactElement {
+  const [, bump] = React.useState(0)
+  const armed = Date.now() < resetArmedUntil
+  const total = Object.keys(DEFAULTS).length
+
+  React.useEffect(() => {
+    if (!armed) return
+    const timer = setTimeout(() => {
+      resetArmedUntil = 0
+      bump((n) => n + 1)
+    }, 4000)
+    return () => clearTimeout(timer)
+  }, [armed])
+
+  return (
+    <Row label="恢复默认">
+      <button
+        className={armed ? 'dafy-btn dafy-btn-danger' : 'dafy-btn'}
+        type="button"
+        onClick={() => {
+          if (armed) {
+            resetAll()
+            resetArmedUntil = 0
+          } else {
+            resetArmedUntil = Date.now() + 4000
+          }
+          bump((n) => n + 1)
+        }}
+      >
+        {armed ? `再点一次，确认恢复全部 ${total} 项` : '恢复全部默认'}
+      </button>
+      {armed ? <span className="dafy-hint">4 秒内未确认将自动取消</span> : null}
+    </Row>
+  )
+}
+
 // ---------------------------------------------------------------------------
 // 设置面板
 // ---------------------------------------------------------------------------
@@ -599,12 +653,7 @@ function MarineSettingsSection(): React.ReactElement {
         <Row label="暗色主色">
           <ColorInput value={cfg.primaryDark} onChange={(v) => set('primaryDark', v)} />
         </Row>
-        <Row label="">
-          <button className="dafy-btn" type="button" onClick={resetAll}>
-            恢复全部默认
-          </button>
-        </Row>
-        <p className="dafy-hint">改动整套色阶由主色自动派生；错误/成功/警告等状态色保持不变。</p>
+        <p className="dafy-hint">整套色阶由主色自动派生；错误/成功/警告等状态色保持不变。</p>
       </Group>
 
       <Group title="背景与氛围">
@@ -732,6 +781,13 @@ function MarineSettingsSection(): React.ReactElement {
             onChange={(v) => set('globalScale', v)}
           />
         </Row>
+      </Group>
+
+      <Group title="重置">
+        <ResetRow />
+        <p className="dafy-hint">
+          把全部 {Object.keys(DEFAULTS).length} 项恢复为出厂默认，含品牌文字、语录列表与配色。
+        </p>
       </Group>
     </div>
   )
