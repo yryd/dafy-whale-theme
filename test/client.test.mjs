@@ -237,6 +237,19 @@ test('外部 require 未知模块会抛出（保证没有偷偷引入依赖）',
   assert.equal(typeof exportsObject.apply, 'function')
 })
 
+test('CSS 必须消费 toCssVars 产出的每一个 --dafy-* 变量', async () => {
+  const { toCssVars } = await import(join(root, 'lib', 'config.js'))
+  const source = await readFile(join(root, 'lib', 'client.cjs'), 'utf8')
+  const vars = Object.keys(toCssVars({}))
+  assert.ok(vars.length >= 5, `应至少有 5 个 CSS 变量，实际 ${vars.length}`)
+  for (const name of vars) {
+    assert.ok(
+      source.includes(`var(${name}`),
+      `CSS 没有消费 ${name} —— 该配置项会形同虚设（globalScale 曾只影响水印就是这个原因）`,
+    )
+  }
+})
+
 // ---------------------------------------------------------------------------
 // 面板 → 持久化 链路（展开函数组件树后找到控件，触发它的 onChange）
 // ---------------------------------------------------------------------------
@@ -372,4 +385,33 @@ test('面板：每个设置行都能找到一个控件（无空行）', async ()
     const [, body] = childrenOf(row)
     assert.ok(childrenOf(body).length > 0, '每个设置行都应有控件')
   }
+})
+
+test('面板：「恢复全部默认」把全部字段写回默认值', async () => {
+  const { DEFAULTS } = await import(join(root, 'lib', 'config.js'))
+  const { tree, writes } = await renderPanel()
+
+  const buttons = []
+  const collectButtons = (node) => {
+    const element = expand(node)
+    if (element === null || typeof element !== 'object') return
+    if (element.type === 'button') buttons.push(element)
+    for (const child of childrenOf(element)) collectButtons(child)
+  }
+  collectButtons(tree)
+
+  const reset = buttons.find((button) => childrenOf(button).includes('恢复全部默认'))
+  assert.ok(reset, '应存在「恢复全部默认」按钮')
+  assert.equal(typeof reset.props.onClick, 'function')
+  reset.props.onClick()
+
+  const fields = new Set(writes.map((entry) => entry.field))
+  const expected = Object.keys(DEFAULTS)
+  assert.equal(fields.size, expected.length, '应写回全部字段')
+  for (const field of expected) {
+    assert.ok(fields.has(field), `缺少字段 ${field}`)
+  }
+  // 写回的应是默认值本身
+  const write = writes.find((entry) => entry.field === 'fishCount')
+  assert.equal(write.value, DEFAULTS.fishCount)
 })
