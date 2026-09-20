@@ -61,44 +61,6 @@ window.__ModuleLoader__.load({
   from { transform: translateX(-24vw); }
   to { transform: translateX(112vw); }
 }
-.dafy-mascot {
-  position: fixed; right: 16px; bottom: 96px; width: 108px; z-index: 30;
-  pointer-events: auto; cursor: pointer;
-  animation: dafy-bob 3.6s ease-in-out infinite;
-  filter: drop-shadow(0 10px 20px rgba(20,60,140,.35));
-}
-@keyframes dafy-bob {
-  0%, 100% { transform: translateY(0) rotate(-2deg); }
-  50% { transform: translateY(-12px) rotate(2deg); }
-}
-.dafy-mascot-img { width: 100%; height: auto; display: block; transition: transform .18s ease; }
-.dafy-mascot:hover .dafy-mascot-img { transform: scale(1.07); }
-.dafy-mascot-emoji { font-size: 84px; line-height: 1; text-align: center; }
-.dafy-mascot-tag { margin-top: 2px; text-align: center; font-size: 11px; font-weight: 600; color: var(--dsw-alias-label-secondary); }
-.dafy-mascot-x {
-  position: absolute; top: -8px; right: -8px; width: 20px; height: 20px;
-  border-radius: 50%; border: 1px solid var(--dsw-alias-border-l2);
-  background: var(--dsw-alias-bg-overlay); color: var(--dsw-alias-label-secondary);
-  font-size: 10px; line-height: 1; padding: 0; cursor: pointer;
-  opacity: 0; transition: opacity .15s ease;
-}
-.dafy-mascot:hover .dafy-mascot-x { opacity: .95; }
-.dafy-bubble {
-  position: absolute; bottom: calc(100% + 10px); right: -6px;
-  max-width: 240px; padding: 8px 12px; border-radius: 14px;
-  background: var(--dsw-alias-bg-overlay);
-  border: 1px solid var(--dsw-alias-border-l1);
-  color: var(--dsw-alias-label-primary);
-  font-size: 12.5px; line-height: 1.5; white-space: normal; text-align: left;
-  box-shadow: 0 8px 24px rgba(20,60,140,.2);
-  animation: dafy-pop .22s ease;
-}
-.dafy-bubble::after {
-  content: ''; position: absolute; top: 100%; right: 38px;
-  border: 7px solid transparent; border-top-color: var(--dsw-alias-border-l1);
-}
-.dafy-bubble-meme { padding: 6px; right: 0; }
-.dafy-bubble-meme img { max-width: 300px; max-height: 230px; border-radius: 10px; display: block; }
 @keyframes dafy-pop { from { transform: translateY(8px) scale(.9); opacity: 0; } }
 .dafy-dock { display: flex; justify-content: center; padding: 2px 0 6px; }
 .dafy-dock-pill {
@@ -167,58 +129,6 @@ window.__ModuleLoader__.load({
       };
 
       // ---- 4. 组件 ----
-      function Mascot() {
-        const [pose, setPose] = React.useState("idle");
-        const [bubble, setBubble] = React.useState(null);
-        const [hidden, setHidden] = React.useState(false);
-        const [pet, setPet] = React.useState(false);
-        const [imgFailed, setImgFailed] = React.useState(false);
-        React.useEffect(() => {
-          if (!pet) return;
-          const id = setTimeout(() => { setPet(false); setPose("idle"); setBubble(null); }, 3000);
-          return () => clearTimeout(id);
-        }, [pet]);
-        if (hidden) return null;
-        const phrases = [
-          "你这吃白饭的蓝色大肥鱼！🐟",
-          "咕噜咕噜～本鱼在冒泡中…",
-          "别催了，鱼在游呢！",
-          "我的每一层脂肪都是参数 💙",
-          "深海里最肥的 AI 就是我！",
-          "V我 50 看看实力 🐋",
-        ];
-        const onClick = () => {
-          setPose("wave");
-          setBubble({ type: "text", text: phrases[Math.floor(Math.random() * phrases.length)] });
-          setPet(true);
-        };
-        const onDouble = () => {
-          setPose("wave");
-          setBubble({ type: "meme" });
-          setPet(true);
-        };
-        return React.createElement("div", { className: "dafy-mascot", onClick: onClick, onDoubleClick: onDouble, title: "戳我互动 / 双击看梗图" },
-          bubble !== null && React.createElement("div", { className: "dafy-bubble" + (bubble.type === "meme" ? " dafy-bubble-meme" : "") },
-            bubble.type === "meme"
-              ? React.createElement("img", { src: img("meme_dafeiyu.png"), alt: "蓝色大肥鱼梗图" })
-              : React.createElement("span", null, bubble.text)),
-          React.createElement("button", {
-            className: "dafy-mascot-x",
-            title: "收起肥鱼",
-            onClick: (e) => { e.stopPropagation(); setHidden(true); },
-          }, "✕"),
-          imgFailed
-            ? React.createElement("div", { className: "dafy-mascot-emoji" }, "🐋")
-            : React.createElement("img", {
-                className: "dafy-mascot-img",
-                src: pose === "wave" ? img("girl_waving.gif") : img("girl_idle.gif"),
-                alt: "DeepSeek 大肥鱼",
-                onError: () => setImgFailed(true),
-              }),
-          React.createElement("div", { className: "dafy-mascot-tag" }, "DeepSeek · 大肥鱼"),
-        );
-      }
-
       function FishSchool() {
         const [, setTick] = React.useState(0);
         React.useEffect(() => store.subscribe(() => setTick((t) => t + 1)), []);
@@ -295,14 +205,8 @@ window.__ModuleLoader__.load({
 
       // ---- 5. Slot 注册 ----
       const slots = ctx.slots;
-      slots.inject("shell.overlay", () => {
-        const d1 = slots.register({ name: "shell.overlay", id: "dafy-school", order: 10 }, () => React.createElement(FishSchool));
-        const d2 = slots.register({ name: "shell.overlay", id: "dafy-mascot", order: 20 }, () => React.createElement(Mascot));
-        return () => {
-          if (typeof d1 === "function") d1();
-          if (typeof d2 === "function") d2();
-        };
-      });
+      slots.inject("shell.overlay", () =>
+        slots.register({ name: "shell.overlay", id: "dafy-school", order: 10 }, () => React.createElement(FishSchool)));
       slots.inject("conversation.input.dock", () =>
         slots.register({ name: "conversation.input.dock", id: "dafy-dock", order: 5 }, () => React.createElement(FishDock)));
       slots.inject("sidebar.footer.action", () =>

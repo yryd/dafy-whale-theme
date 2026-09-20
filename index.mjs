@@ -1,8 +1,8 @@
 // dafy-whale-theme — host half.
 //
-// Serves the network-collected "蓝色大肥鱼" meme assets for the permanent
-// client theme bundle at /dafy-assets/<name>. Same route shape the shipped
-// client-modules registry uses for /plugins (kind: "prefix").
+// Serves the theme's MIT-licensed image assets for the permanent client theme
+// bundle at /dafy-assets/<name>. Same route shape the shipped client-modules
+// registry uses for /plugins (kind: "prefix").
 
 import { readFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
@@ -16,19 +16,14 @@ const here = dirname(fileURLToPath(import.meta.url))
 
 const MIME = {
   '.png': 'image/png',
-  '.gif': 'image/gif',
 }
 
 const FILES = [
-  'girl_idle.gif',
-  'girl_waving.gif',
-  'girl_running.gif',
   'whale_front.png',
   'whale_side.png',
   'whale_icon.png',
   'fish_idle.png',
   'fish_happy.png',
-  'meme_dafeiyu.png',
 ]
 
 const ALLOWED = new Set(FILES)

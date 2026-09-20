@@ -3,8 +3,8 @@
   "version": "1.2.0",
   "type": "module",
   "main": "index.mjs",
-  "description": "蓝色大肥鱼主题：海洋配色、鱼群、气泡与 DeepSeek 娘吉祥物（素材来自网络开源仓库）。",
-  "repository": "https://github.com/DViridescent/dafy-whale-theme",
+  "description": "蓝色大肥鱼主题：DeepSeek Harness web 前端的海洋配色、游动鱼群与上升气泡。",
+  "repository": "https://github.com/yryd/dafy-whale-theme",
   "exports": {
     ".": "./index.mjs",
     "./client": "./client.js",
@@ -14,10 +14,8 @@
   "files": [
     "index.mjs",
     "client.js",
-    "install.mjs",
     "cordis.patch.yml",
     "assets",
-    "preview.png",
     "README.md",
     "LICENSE",
     "NOTICE"
@@ -40,5 +38,6 @@
     "web-plugin",
     "blue-whale"
   ],
-  "license": "MIT"
+  "license": "MIT",
+  "author": "yryd"
 }
