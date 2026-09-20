@@ -24,8 +24,10 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
           package-manager-cache: false   # 发布构建禁用缓存（npm 官方建议）
 
-      # 防止 tag 与 package.json 版本不一致导致发错版本
-      - name: 校验 tag 与 package.json 版本一致
+      # 1) 防止 tag 与 package.json 版本不一致导致发错版本
+      # 2) 判定 dist-tag：npm 禁止裸发预发布版（须显式 --tag），故预发布走 next，正式版走 latest
+      - name: 校验版本并判定 dist-tag
+        id: release
         run: |
           TAG="${GITHUB_REF_NAME#v}"
           PKG="$(node -p "require('./package.json').version")"
@@ -34,7 +36,14 @@ jobs:
             echo "::error::tag v$TAG 与 package.json 的 $PKG 不一致，已中止发布"
             exit 1
           fi
+          case "$PKG" in
+            *-*) DIST_TAG=next ;;
+            *)   DIST_TAG=latest ;;
+          esac
+          echo "dist-tag=$DIST_TAG"
+          echo "dist_tag=$DIST_TAG" >> "$GITHUB_OUTPUT"
 
       # 本包零依赖、无构建步骤，因此不需要 npm ci / npm run build。
       # 认证走 OIDC trusted publishing，无需 NPM_TOKEN。
-      - run: npm publish
+      # 注意：将来引入 TS/构建后，这里必须在 publish 之前插入构建步骤。
+      - run: npm publish --tag ${{ steps.release.outputs.dist_tag }}
