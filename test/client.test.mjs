@@ -236,3 +236,140 @@ test('外部 require 未知模块会抛出（保证没有偷偷引入依赖）',
   const exportsObject = captured.factory(require)
   assert.equal(typeof exportsObject.apply, 'function')
 })
+
+// ---------------------------------------------------------------------------
+// 面板 → 持久化 链路（展开函数组件树后找到控件，触发它的 onChange）
+// ---------------------------------------------------------------------------
+
+/** 展开函数组件（桩 React 不执行组件，需要手动调用）。 */
+function expand(node) {
+  let current = node
+  let guard = 0
+  while (
+    current !== null &&
+    typeof current === 'object' &&
+    typeof current.type === 'function' &&
+    guard++ < 100
+  ) {
+    current = current.type(current.props)
+  }
+  return current
+}
+
+function childrenOf(element) {
+  const children = element?.props?.children
+  if (children === undefined || children === null) return []
+  return Array.isArray(children) ? children.flat(Infinity) : [children]
+}
+
+/** 深度优先收集指定 className 的元素。 */
+function findByClass(node, className, out = []) {
+  const element = expand(node)
+  if (element === null || typeof element !== 'object') return out
+  if (element.props?.className === className) out.push(element)
+  for (const child of childrenOf(element)) findByClass(child, className, out)
+  return out
+}
+
+/** 在子树里深度查找第一个真正的可交互控件（input / select / textarea）。 */
+function findInteractive(node) {
+  const element = expand(node)
+  if (element === null || typeof element !== 'object') return null
+  if (element.type === 'input' || element.type === 'select' || element.type === 'textarea') {
+    return element
+  }
+  for (const child of childrenOf(element)) {
+    const found = findInteractive(child)
+    if (found !== null) return found
+  }
+  return null
+}
+
+/** 按行标签取该行的控件元素（穿透 Slider / ColorInput 等包装组件）。 */
+function controlFor(tree, labelText) {
+  const rows = findByClass(tree, 'dafy-row')
+  for (const row of rows) {
+    const [label, body] = childrenOf(row)
+    if (expand(label)?.props?.children === labelText) {
+      const control = findInteractive(body)
+      if (control !== null) return control
+    }
+  }
+  throw new Error(`未找到标签为「${labelText}」的设置行`)
+}
+
+/** 渲染面板并返回 { tree, writes }。 */
+async function renderPanel() {
+  const { registrations, writes } = await applyWithStubs()
+  const section = registrations.find((entry) => entry.options.name === 'settings.section')
+  return { tree: expand(section.component({})), writes }
+}
+
+test('面板：切换「显示鱼群」会写入 schoolEnabled', async () => {
+  const { tree, writes } = await renderPanel()
+  const toggle = controlFor(tree, '显示鱼群')
+  assert.equal(toggle.props.type, 'checkbox')
+  assert.equal(toggle.props.checked, true)
+  toggle.props.onChange({ target: { checked: false } })
+  const write = writes.find((entry) => entry.field === 'schoolEnabled')
+  assert.ok(write, '应写入 schoolEnabled')
+  assert.equal(write.value, false)
+})
+
+test('面板：拖动「鱼群数量」会写入 fishCount', async () => {
+  const { tree, writes } = await renderPanel()
+  const slider = controlFor(tree, '鱼群数量')
+  assert.equal(slider.props.type, 'range')
+  slider.props.onChange({ target: { value: '9' } })
+  const write = writes.find((entry) => entry.field === 'fishCount')
+  assert.ok(write, '应写入 fishCount')
+  assert.equal(write.value, 9)
+  assert.equal(typeof write.value, 'number', '必须转成数字而非字符串')
+})
+
+test('面板：输入越界值会被 clamp 后再写入', async () => {
+  const { tree, writes } = await renderPanel()
+  const slider = controlFor(tree, '鱼群数量')
+  // 滑杆理论上给不出越界值，但 normalize 必须兜住
+  slider.props.onChange({ target: { value: '999' } })
+  const write = writes.find((entry) => entry.field === 'fishCount')
+  assert.equal(write.value, 12, '应被 clamp 到最大值')
+})
+
+test('面板：改主色会写入 primaryLight', async () => {
+  const { tree, writes } = await renderPanel()
+  const color = controlFor(tree, '亮色主色')
+  assert.equal(color.props.type, 'color')
+  color.props.onChange({ target: { value: '#ff0000' } })
+  const write = writes.find((entry) => entry.field === 'primaryLight')
+  assert.ok(write, '应写入 primaryLight')
+  assert.equal(write.value, '#FF0000', '颜色应归一化为大写')
+})
+
+test('面板：编辑语录列表会按行拆分并过滤空行', async () => {
+  const { tree, writes } = await renderPanel()
+  const textarea = controlFor(tree, '语录列表')
+  assert.equal(textarea.type, 'textarea')
+  textarea.props.onChange({ target: { value: '甲\n\n乙\n' } })
+  const write = writes.find((entry) => entry.field === 'dockLines')
+  assert.ok(write, '应写入 dockLines')
+  assert.deepEqual([...write.value], ['甲', '乙'], '空行应被过滤')
+})
+
+test('面板：改品牌文字会写入 brandText', async () => {
+  const { tree, writes } = await renderPanel()
+  const input = controlFor(tree, '品牌文字')
+  input.props.onChange({ target: { value: '深海大肥鱼' } })
+  const write = writes.find((entry) => entry.field === 'brandText')
+  assert.equal(write.value, '深海大肥鱼')
+})
+
+test('面板：每个设置行都能找到一个控件（无空行）', async () => {
+  const { tree } = await renderPanel()
+  const rows = findByClass(tree, 'dafy-row')
+  assert.ok(rows.length >= 30, `设置行应不少于 30 行，实际 ${rows.length}`)
+  for (const row of rows) {
+    const [, body] = childrenOf(row)
+    assert.ok(childrenOf(body).length > 0, '每个设置行都应有控件')
+  }
+})

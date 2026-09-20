@@ -7,7 +7,7 @@
 - 主色可调，整套色阶自动派生；错误/成功/警告状态色保持不变。
 - 新增仿官方构建版本徽章（默认隐藏，文字可自定义）。
 - 新增整体缩放（同时作用于品牌标记、鱼群、气泡、背景水印）。
-- **构建改造**：引入 TypeScript + 纯 `tsc`（无打包器），产物 `lib/index.js`（宿主 ESM）与 `lib/client.cjs`（客户端 ModuleLoader）；新增 DSH 契约校验、schema 对齐校验与 28 项测试。
+- **构建改造**：引入 TypeScript + 纯 `tsc`（无打包器），产物 `lib/index.js`（宿主 ESM）与 `lib/client.cjs`（客户端 ModuleLoader）；新增 DSH 契约校验（16 项）、schema 对齐校验（5 项）与 51 项测试（配置模型 18 / 客户端接线 17 / 宿主端 16）。
 - 运行时依赖仅 `@deepseek-ai/schemastery`（DSH 设置 schema 的要求）。
 - ⚠️ 破坏性变更：入口从 `index.mjs` / `client.js` 变为 `lib/`；从 git 直接安装不再可用，请用 npm 安装。
 
