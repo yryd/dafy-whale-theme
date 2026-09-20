@@ -58,8 +58,25 @@ jobs:
             echo "skip=false" >> "$GITHUB_OUTPUT"
           fi
 
-      # 本包零依赖、无构建步骤，因此不需要 npm ci / npm run build。
+      # ⚠️ 本包已引入 TypeScript + 构建（v2.0.0 起）。
+      # 必须在 publish 之前安装 devDependencies、编译到 lib/、跑护栏与测试，
+      # 否则会把未构建的源码发出去（TS 源码不在 files 白名单内 → 发包即损坏）。
       # 认证走 OIDC trusted publishing，无需 NPM_TOKEN。
-      # 注意：将来引入 TS/构建后，这里必须在 publish 之前插入构建步骤。
+      - name: 安装依赖（含 devDependencies）
+        if: steps.guard.outputs.skip == 'false'
+        run: npm ci --include=dev
+
+      - name: 构建（TS → lib/）
+        if: steps.guard.outputs.skip == 'false'
+        run: npm run build
+
+      - name: 契约校验（DSH 契约 + schema 对齐）
+        if: steps.guard.outputs.skip == 'false'
+        run: npm run check
+
+      - name: 运行测试
+        if: steps.guard.outputs.skip == 'false'
+        run: node --test test/*.test.mjs
+
       - if: steps.guard.outputs.skip == 'false'
         run: npm publish --tag ${{ steps.release.outputs.dist_tag }}

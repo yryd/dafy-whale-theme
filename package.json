@@ -1,29 +1,36 @@
 {
   "name": "dafy-whale-theme",
-  "version": "1.2.1",
+  "version": "2.0.0",
   "type": "module",
-  "main": "index.mjs",
-  "description": "蓝色大肥鱼主题：DeepSeek Harness web 前端的海洋配色、游动鱼群与上升气泡。",
+  "main": "lib/index.js",
+  "description": "蓝色大肥鱼主题：DeepSeek Harness web 前端的海洋配色、游动鱼群与上升气泡，带「设置 → 海洋主题」可调面板。",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/yryd/dafy-whale-theme.git"
   },
   "exports": {
-    ".": "./index.mjs",
-    "./client": "./client.js",
+    ".": "./lib/index.js",
+    "./client": "./lib/client.cjs",
     "./cordis.patch.yml": "./cordis.patch.yml",
     "./package.json": "./package.json"
   },
   "files": [
-    "index.mjs",
-    "client.js",
-    "cordis.patch.yml",
+    "lib",
     "assets",
+    "cordis.patch.yml",
     "README.md",
     "CHANGELOG.md",
     "LICENSE",
     "NOTICE"
   ],
+  "scripts": {
+    "clean": "node -e \"const fs=require('node:fs');fs.rmSync('lib',{recursive:true,force:true});fs.rmSync('.build',{recursive:true,force:true})\"",
+    "build": "npm run clean && tsc -p tsconfig.build-host.json && tsc -p tsconfig.build-client.json && node scripts/wrap-client.mjs",
+    "typecheck": "tsc -p tsconfig.json",
+    "check": "node scripts/check-dsh.mjs && node scripts/check-schema-align.mjs",
+    "test": "npm run build && node --test test/*.test.mjs",
+    "prepublishOnly": "npm run build"
+  },
   "dsh": {
     "bundle": {
       "patch": "./cordis.patch.yml"
@@ -31,7 +38,8 @@
     "client": {
       "platform": "web",
       "inject": [
-        "@deepseek-ai/dsh-client-ui-theme"
+        "@deepseek-ai/dsh-client-ui-theme",
+        "@deepseek-ai/dsh-client-ui-settings"
       ]
     }
   },
@@ -43,5 +51,23 @@
     "blue-whale"
   ],
   "license": "MIT",
-  "author": "yryd"
+  "author": "yryd",
+  "dependencies": {
+    "@deepseek-ai/schemastery": "^3.18.2"
+  },
+  "devDependencies": {
+    "@deepseek-ai/cordis": "^4.0.2",
+    "@deepseek-ai/dsh-client-locale": "0.1.6-alpha.2",
+    "@deepseek-ai/dsh-client-ui-conversation": "0.1.6-alpha.2",
+    "@deepseek-ai/dsh-client-ui-layout": "0.1.6-alpha.2",
+    "@deepseek-ai/dsh-client-ui-primitives": "0.1.6-alpha.2",
+    "@deepseek-ai/dsh-client-ui-settings": "0.1.6-alpha.2",
+    "@deepseek-ai/dsh-client-ui-sidebar": "0.1.6-alpha.2",
+    "@deepseek-ai/dsh-client-ui-slots": "0.1.6-alpha.2",
+    "@deepseek-ai/dsh-settings": "0.1.6-alpha.2",
+    "@types/node": "^20.19.43",
+    "@types/react": "~18.3.1",
+    "react": "^18.3.1",
+    "typescript": "^5.9.3"
+  }
 }

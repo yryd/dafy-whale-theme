@@ -1,0 +1,30 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "module": "CommonJS",
+    "moduleResolution": "Node10",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "rootDir": "src",
+    "outDir": ".build",
+    "declaration": false,
+    "declarationMap": false,
+    "sourceMap": false,
+    "removeComments": false,
+    "paths": {
+      "@deepseek-ai/dsh-client-ui-settings/client": [
+        "./node_modules/@deepseek-ai/dsh-client-ui-settings/lib/types/client/index.d.ts"
+      ],
+      "@deepseek-ai/dsh-client-ui-sidebar/client": [
+        "./node_modules/@deepseek-ai/dsh-client-ui-sidebar/lib/types/client/index.d.ts"
+      ],
+      "@deepseek-ai/dsh-client-ui-layout/client": [
+        "./node_modules/@deepseek-ai/dsh-client-ui-layout/lib/types/client/index.d.ts"
+      ],
+      "@deepseek-ai/dsh-client-ui-conversation/client": [
+        "./node_modules/@deepseek-ai/dsh-client-ui-conversation/lib/types/client/index.d.ts"
+      ]
+    }
+  },
+  "include": ["src/client.tsx", "src/config.ts", "src/logo-path.ts"]
+}
