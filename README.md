@@ -2,7 +2,7 @@
 
 DeepSeek Harness web 前端的整站主题插件：海洋蓝配色、游动鱼群、上升气泡、输入框上方「每日鱼语」、左上角品牌替换。
 
-![preview](https://raw.githubusercontent.com/yryd/dafy-whale-theme/main/preview.png)
+![主界面：海洋蓝配色、游动鱼群与背景水印](https://raw.githubusercontent.com/yryd/dafy-whale-theme/main/preview.png)
 
 ## 一句话安装
 
@@ -45,6 +45,8 @@ dsh plugin --profile web remove dafy-whale-theme   # 卸载
 - 窄侧栏自适应，无 UI 裁切
 
 ## 设置面板
+
+![设置 → 海洋主题](https://raw.githubusercontent.com/yryd/dafy-whale-theme/main/settings.png)
 
 装好并重启后，进入 **设置 → 海洋主题**，共 7 组 32 项，**改动即时生效**（无需重启、无需点保存）：
 
