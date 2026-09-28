@@ -8,8 +8,17 @@
  * 这样「初版 = 当前主题 1:1 复现」才有保证（见 需求确认单.md）。
  */
 
-/** 配置命名空间（宿主注册 + 客户端 bind 必须一致，由 check-schema-align.mjs 校验）。 */
-export const SETTINGS_NAMESPACE = 'dafy-whale'
+/**
+ * 插件条目 id —— 与 `cordis.patch.yml` 里 `insert[].id` 必须一致。
+ *
+ * ⚠️ DSH 0.1.7 起，插件配置的 **settings 命名空间就是条目 id**
+ * （源码 `dsh-settings`：`ns: entry.options.id`），不再是插件自定义的字符串。
+ * 0.1.6 时代我们用的是 `dafy-whale`，迁移后作废。
+ *
+ * 宿主（导出 `Config`）与客户端（`configForms.get()`）必须用同一个值，
+ * 由 `check-schema-align.mjs` 与 `check-dsh-names.mjs` 双向校验。
+ */
+export const ENTRY_ID = 'dafy-whale-theme'
 
 /** 可作水印的鲸鱼素材。 */
 export type WatermarkAsset = 'whale_front.png' | 'whale_side.png' | 'whale_icon.png'

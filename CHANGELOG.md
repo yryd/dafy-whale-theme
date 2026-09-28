@@ -1,5 +1,17 @@
 # Changelog
 
+## 2.1.0 — 2026-09-28
+
+**适配 DSH 0.1.7 的配置 API 变更**（`settingsScope` → `configForms`）。
+
+- 客户端改用 `ctx.configForms.get(entryId)`；服务名 `settingsScope` → `configForms`。
+- 宿主端改为**导出 `Config`** 声明 schema（旧的 `settings.register(ns, schema)` 已被 DSH 移除），并声明 `settings.configure({ auto: false })`。
+- 全部 32 个 schema 字段加 `.volatile()` —— DSH 0.1.7 的硬要求，否则配置对客户端不可见。
+- settings 命名空间由自定义的 `dafy-whale` 改为**插件条目 id** `dafy-whale-theme`（0.1.7 起命名空间即条目 id）。⚠️ 旧命名空间下的配置不再读取；此前均为默认值，实际影响为零。
+- **新增 `peerDependencies` 版本声明**：`@deepseek-ai/dsh: ">=0.1.7-rc.1 <0.1.8"`。此前没有该字段，DSH 会跳过版本兼容检查，导致 0.1.7 的破坏性变更表现为**插件静默失效**而非明确报错。
+- 护栏：新增「必须声明 dsh peer 范围」检查（`check-dsh` 16 → 17 项）；`check-schema-align` 适配 `Config` 导出与 `.volatile()` 访问器语义。
+- 测试 63 → 64 项。
+
 ## 2.0.0 — 2026-09-20
 
 - **新增「设置 → 海洋主题」面板**：品牌区 / 配色 / 背景与氛围 / 鱼群 / 每日鱼语 / 界面 / 重置，共 7 组 32 项可调，改动即时生效并持久化。

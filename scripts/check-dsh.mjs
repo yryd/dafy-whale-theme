@@ -97,6 +97,24 @@ if (typeof patchPath === 'string' && (await exists(patchPath))) {
   check('patch 含自身 insert 行', yaml.includes(`name: ${PKG.name}`))
 }
 
+// ---- 7. 必须声明 @deepseek-ai/dsh peer 范围 ----
+//
+// 这条是 0.1.7 事故的直接教训：没有 peerDependencies 时，DSH 的
+// `evaluatePluginCompatibility()` 会**整段跳过**检查（源码首行即 return），
+// 于是「API 已变更、插件必然失效」也不会被拦——表现是插件安静地不工作，
+// 只能靠用户发现「面板怎么不见了」。
+// 声明范围后，DSH 会在安装与启动时明确报版本不兼容。
+const dshPeers = Object.keys(PKG.peerDependencies ?? {}).filter(
+  (name) => name === '@deepseek-ai/dsh' || name.startsWith('@deepseek-ai/dsh-'),
+)
+check(
+  '声明了 @deepseek-ai/dsh peer 范围（缺失则版本不兼容会静默失效）',
+  dshPeers.length > 0,
+  Object.keys(PKG.peerDependencies ?? {}).length > 0
+    ? `peerDependencies 里没有 dsh 系包：${Object.keys(PKG.peerDependencies).join(', ')}`
+    : '完全没有 peerDependencies 字段',
+)
+
 // ---- 报告 ----
 for (const label of passes) console.log(`  ✓ ${label}`)
 for (const label of failures) console.error(`  ✗ ${label}`)

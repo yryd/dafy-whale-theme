@@ -18,7 +18,8 @@ import { fileURLToPath } from 'node:url'
 const root = dirname(dirname(fileURLToPath(import.meta.url)))
 
 const { DEFAULTS, RANGES } = await import(join(root, 'lib/config.js'))
-const { ConfigSchema } = await import(join(root, 'lib/index.js'))
+// DSH 0.1.7 起宿主端导出的是 `Config`（旧的 ConfigSchema 随 register() 一起移除了）。
+const { Config } = await import(join(root, 'lib/index.js'))
 
 const failures = []
 const passes = []
@@ -28,10 +29,23 @@ function check(label, ok, detail = '') {
   else failures.push(`${label}${detail ? ` —— ${detail}` : ''}`)
 }
 
+/**
+ * 取字段的静态值。
+ *
+ * DSH 0.1.7 起，凡是标了 `.volatile()` 的字段，schema 解析出来的是**惰性访问器**
+ * `{ get: () => value }` 而不是值本身（官方宿主端因此要写 `config.x.get()`）。
+ * 我们的 32 个字段全部标了 volatile，所以比较前必须解包。
+ */
+function unwrap(value) {
+  return value !== null && typeof value === 'object' && typeof value.get === 'function'
+    ? value.get()
+    : value
+}
+
 // ---- 1. schema 可调用，且解析空对象得到全部字段 ----
 let resolved
 try {
-  resolved = ConfigSchema({})
+  resolved = Config({})
   check('schema 可被调用并解析空对象', true)
 } catch (error) {
   check('schema 可被调用并解析空对象', false, String(error))
@@ -52,7 +66,7 @@ if (resolved !== undefined) {
   // ---- 2. 默认值逐字段一致 ----
   const mismatched = []
   for (const key of defaultKeys) {
-    const a = JSON.stringify(resolved[key])
+    const a = JSON.stringify(unwrap(resolved[key]))
     const b = JSON.stringify(DEFAULTS[key])
     if (a !== b) mismatched.push(`${key}: schema=${a} vs DEFAULTS=${b}`)
   }
@@ -61,7 +75,7 @@ if (resolved !== undefined) {
   // ---- 3. 数值字段的边界与 RANGES 一致 ----
   const outOfRange = []
   for (const [field, range] of Object.entries(RANGES)) {
-    const value = resolved[field]
+    const value = unwrap(resolved[field])
     if (typeof value !== 'number') {
       outOfRange.push(`${field} 在 schema 中不是 number`)
       continue

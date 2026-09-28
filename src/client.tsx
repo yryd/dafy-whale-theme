@@ -7,15 +7,15 @@
  *  2. 注册 5 个插槽：鱼群 / 每日鱼语 / chip / 品牌标记 / 品牌文字
  *  3. 注册「设置 → 海洋主题」面板，配置即时生效并持久化
  *
- * 配置读写走官方 settingsScope；改动**即时生效**（无草稿层）。
+ * 配置读写走官方 configForms（DSH 0.1.7）；改动**即时生效**（无草稿层）。
  */
 
 import * as React from 'react'
-import type { SettingsScope } from '@deepseek-ai/dsh-client-ui-settings/client'
+import type { ConfigForm } from '@deepseek-ai/dsh-client-ui-settings/client'
 import {
   DEFAULTS,
   RANGES,
-  SETTINGS_NAMESPACE,
+  ENTRY_ID,
   bubbleSpecs,
   buildFish,
   deriveTokens,
@@ -61,12 +61,17 @@ interface ClientContext {
   effect(fn: () => void | (() => void), label?: string): void
   slots: SlotsService
   theme: ThemeService
-  settingsScope: {
-    bind<T>(spec: { namespace: string }): SettingsScope<T>
+  /**
+   * DSH 0.1.7 的配置服务。旧名 `settingsScope` 及其 `bind({ namespace })`
+   * 均已移除，改为 `get(entryId)` —— 参数是**插件条目 id**，
+   * 不再是我们自定义的命名空间字符串。
+   */
+  configForms: {
+    get<T>(entryId: string): ConfigForm<T>
   }
 }
 
-export const inject = ['slots', 'theme', 'settingsScope']
+export const inject = ['slots', 'theme', 'configForms']
 
 // ---------------------------------------------------------------------------
 // 配置 store：单一真源，组件经 useSyncExternalStore 订阅
@@ -95,8 +100,8 @@ function useConfig(): WhaleConfig {
   return React.useSyncExternalStore(subscribeConfig, getConfig, getConfig)
 }
 
-/** 设置命名空间句柄（apply 时绑定）。 */
-let scope: SettingsScope<WhaleConfig> | undefined
+/** 配置表句柄（apply 时取得）。 */
+let scope: ConfigForm<WhaleConfig> | undefined
 /** 客户端上下文（供样式/令牌应用使用）。 */
 let clientCtx: ClientContext | undefined
 
@@ -816,8 +821,10 @@ export function apply(ctx: ClientContext): void {
     }
   })
 
-  // ---- 2. 绑定配置命名空间并订阅 ----
-  const bound = ctx.settingsScope.bind<WhaleConfig>({ namespace: SETTINGS_NAMESPACE })
+  // ---- 2. 取配置表并订阅 ----
+  // 参数是插件条目 id（= cordis.patch.yml 的 insert[].id），
+  // 也是宿主端导出 Config 后 DSH 为它分配的 settings 命名空间。
+  const bound = ctx.configForms.get<WhaleConfig>(ENTRY_ID)
   scope = bound
 
   ctx.effect(() => {

@@ -31,9 +31,19 @@ dsh plugin --profile web remove dafy-whale-theme   # 卸载
 
 | DSH 版本 | 状态 |
 |---|---|
-| `0.1.6-alpha.1` | ✅ 当前版本，已实测 |
+| `0.1.7-rc.2` | ✅ 当前版本，已实测 |
+| `0.1.7-rc.1` / `0.1.7` | ✅ 声明兼容（同属 0.1.7 系列） |
+| `0.1.6-alpha.1` 及更早 | ❌ 不支持 —— 2.1.0 起改用 DSH 0.1.7 的新配置 API |
 
-仅支持 **web** 端（`dsh.client.platform: "web"`）。DSH 处于 alpha 阶段，破坏性变更可能使主题静默失效；升级 DSH 后若品牌区或配色异常，请提 issue。
+`package.json` 里声明了：
+
+```json
+"peerDependencies": { "@deepseek-ai/dsh": ">=0.1.7-rc.1 <0.1.8" }
+```
+
+DSH 会在**安装与启动**时据此检查运行时版本。版本不符时它会**明确拦截**并提示需要版本豁免，而不是让插件安静地不工作——这一点很重要，因为 0.1.7 之前 DSH 的配置 API 有过一次破坏性变更（`settingsScope` → `configForms`）。
+
+仅支持 **web** 端（`dsh.client.platform: "web"`）。
 
 ## 特性
 

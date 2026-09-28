@@ -127,17 +127,19 @@ async function applyWithStubs() {
         return () => {}
       },
     },
-    settingsScope: {
-      bind({ namespace }) {
-        assert.equal(namespace, 'dafy-whale')
+    // DSH 0.1.7：settingsScope.bind({namespace}) 已换成 configForms.get(entryId)
+    configForms: {
+      get(entryId) {
+        assert.equal(entryId, 'dafy-whale-theme', 'get() 的实参应是插件条目 id')
         return {
           getSnapshot: () => ({ value: undefined }),
           subscribe: () => () => {},
           set: (field, value) => {
             writes.push({ field, value })
-            return Promise.resolve()
+            // 0.1.7 起 set() 返回 Promise<boolean>（是否被 Host 接受）
+            return Promise.resolve(true)
           },
-          unset: () => Promise.resolve(),
+          unset: () => Promise.resolve(true),
         }
       },
     },
@@ -153,10 +155,10 @@ test('产物声明了正确的 ModuleLoader id', async () => {
   assert.equal(typeof captured.factory, 'function')
 })
 
-test('注入声明包含 slots / theme / settingsScope', async () => {
+test('注入声明包含 slots / theme / configForms', async () => {
   const { exportsObject } = await applyWithStubs()
   // 产物跑在 vm 的独立 realm 里，数组原型不同，因此比较内容而非结构
-  assert.equal([...exportsObject.inject].join(','), 'slots,theme,settingsScope')
+  assert.equal([...exportsObject.inject].join(','), 'slots,theme,configForms')
   assert.equal(typeof exportsObject.apply, 'function')
 })
 

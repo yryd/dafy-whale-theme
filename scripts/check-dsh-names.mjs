@@ -131,7 +131,9 @@ for (const name of serviceNames) {
 }
 
 // ---- 3. 宿主端 settings 命名空间不应被其他插件占用 ----
-const namespace = 'dafy-whale'
+// DSH 0.1.7 起命名空间就是插件条目 id（ENTRY_ID），从产物读取以免硬编码漂移。
+const { ENTRY_ID } = await import(join(root, 'lib/index.js'))
+const namespace = ENTRY_ID
 const packagesDir = join(dshRoot, 'node_modules', '@deepseek-ai')
 let taken = []
 try {

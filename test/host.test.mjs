@@ -38,13 +38,17 @@ function makeCtx() {
     get(name) {
       if (name === 'settings') {
         return {
-          register(namespace, schema) {
-            namespaces.push({ namespace, schema })
+          // DSH 0.1.7：register(ns, schema) 已移除，改为声明呈现策略
+          configure(presentation, owner) {
+            namespaces.push({ presentation, owner })
+            return () => {}
           },
         }
       }
       return undefined
     },
+    // configure 用它标识「这条呈现策略属于谁」
+    fiber: { uid: 'test-fiber' },
     webServer: {
       register(route) {
         routes.push(route)
@@ -91,14 +95,23 @@ test('宿主导出 apply 与包名', () => {
   assert.equal(host.name, 'dafy-whale-theme')
 })
 
-test('settings 命名空间以 dafy-whale 注册（与客户端 bind 的名字一致）', () => {
+test('宿主导出 Config 与 ENTRY_ID（DSH 0.1.7 的 schema 声明方式）', () => {
+  // 新模型下 schema 由「导出 Config」声明，旧的 settings.register() 已移除。
+  // 少了这个导出，客户端 configForms.get() 就取不到任何东西。
+  assert.ok(host.Config, '必须导出 Config')
+  assert.equal(typeof host.Config, 'function', 'Config 应可被调用（schemastery schema）')
+  assert.equal(host.ENTRY_ID, 'dafy-whale-theme', '命名空间 = 插件条目 id')
+  // 条目 id 必须与 cordis.patch.yml 里的 id 一致
+  assert.equal(host.ENTRY_ID, host.name)
+})
+
+test('apply 声明 settings 呈现策略 auto:false（界面由插件自带）', () => {
   const { ctx, namespaces, injected } = makeCtx()
   host.apply(ctx)
   assert.deepEqual(injected, [['settings']])
   assert.equal(namespaces.length, 1)
-  assert.equal(namespaces[0].namespace, 'dafy-whale')
-  assert.equal(namespaces[0].namespace, host.SETTINGS_NAMESPACE)
-  assert.ok(namespaces[0].schema, '应同时注册 schema')
+  assert.deepEqual(namespaces[0].presentation, { auto: false })
+  assert.equal(namespaces[0].owner, ctx.fiber, 'owner 应是本插件的 fiber')
 })
 
 test('未组合 settings 服务时宿主仍可加载（主题以默认值工作）', () => {
