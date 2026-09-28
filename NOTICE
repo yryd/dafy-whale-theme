@@ -1,6 +1,25 @@
-# 素材来源与许可（NOTICE）
+# 来源与许可（NOTICE）
 
-本仓库代码采用 MIT 许可（见 LICENSE）。图片素材来自以下社区仓库，各自保留原许可：
+本仓库采用 MIT 许可（见 LICENSE）。以下分别说明**代码**与**图片素材**的来源。
+
+## 一、代码来源
+
+本插件最初 fork 自 [DViridescent/dafy-whale-theme](https://github.com/DViridescent/dafy-whale-theme)（MIT），
+上游的提交历史**完整保留在本仓库的 git 历史中**。
+
+在继承基础上做过以下重写：
+
+- 改用 TypeScript + 纯 `tsc` 构建（产物 `lib/`），移除上游的 `index.mjs` / `client.js` 与 `install.mjs` 手动挂载设计
+- 新增「设置 → 海洋主题」面板（7 组 32 项可调）与 DSH 设置命名空间
+- 删除吉祥物素材及其渲染（清除素材许可债务）
+- 迁移到 DSH 0.1.7 的配置 API（`settingsScope` → `configForms`），并以 `peerDependencies` 声明兼容范围
+- 补齐构建护栏（29 项）、测试（64 项）、CI 与 npm 发布流水线
+
+两个仓库同为 MIT，版权行保持上游原文：`Copyright (c) 2026 dafy-whale-theme contributors`。
+
+## 二、图片素材
+
+图片素材来自以下社区仓库，各自保留原许可：
 
 | 素材文件 | 来源仓库 | 许可与分发方式 |
 | --- | --- | --- |
